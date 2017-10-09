@@ -8,70 +8,68 @@ import markdown
 from markdown.treeprocessors import Treeprocessor
 from markdown import Extension
 from markdown.util import etree
-import re
 from copy import copy
 
 
-GROUP_RE = r'(^(@\{(?P<lightbox>.+)\})(?P<description>.*))'
-HIDDEN_RE = r'(^(!)(?P<description>.*))'
-
-class LightboxImagesTreeprocessor(Treeprocessor):
-    """ Lightbox Images Treeprocessor """
-    def __init__(self, md, group = True):
+class FigureTreeprocessor(Treeprocessor):
+    """ Figure Treeprocessor """
+    def __init__(self, md, figure_classes=None, img_classes=None, figcaption_classes=None):
         Treeprocessor.__init__(self, md)
-        self.group_re = re.compile(GROUP_RE)
-        self.hidden_re = re.compile(HIDDEN_RE)
-        self.group = group
+        self._figure_classes = figure_classes
+        self._img_classes = img_classes
+        self._figcaption_classes = figcaption_classes
+
     def run(self, root):
-        parent_map = {c:p for p in root.iter() for c in p}
-        i = 0
+        parent_map = {c: p for p in root.iter() for c in p}
         images = root.getiterator("img")
-        for image in images:
-            desc = image.attrib["alt"]
-            h = self.hidden_re.match(desc)
-            if h:
-                desc = h.group("description")
-                hidden = True
-            else:
-                hidden = False
-            m = self.group_re.match(desc)
-            if m:
-                lb = m.group("lightbox")
-                desc = m.group("description")
-            elif self.group:
-                lb = "all_images"
-            else:
-                lb = "image" + str(i)
-            image.set("alt", desc)
+        for count, image in enumerate(images):
+            caption = image.attrib["alt"]
+            image.set("alt", caption)
             parent = parent_map[image]
-            ix = list(parent).index(image)
-            new_node = etree.Element('a')
-            new_node.set("href",image.attrib["src"])
-            new_node.set("data-lightbox", lb)
-            new_node.set("data-title",desc)
-            new_node.tail = copy(image.tail)
-            parent.insert(ix, new_node)
+            idx = list(parent).index(image)
+
+            figure = etree.Element('figure')
+            figcap = etree.Element('figcaption')
+
+            if self._figure_classes is not None:
+                figure.set("class", self._figure_classes)
+            else:
+                figure.set("class", "figure" + str(count + 1))
+
+            if self._img_classes is not None:
+                image.set("class", self._img_classes)
+
+            if self._figcaption_classes is not None:
+                figcap.set("class", self._figcaption_classes)
+
+            figure.set("data-title", caption)
+            figure.tail = copy(image.tail)
+            parent.insert(idx, figure)
             parent.remove(image)
             image.tail = markdown.util.AtomicString("")
-            if not hidden:
-                new_node.append(image) 
-            i += 1
+            figure.append(image)
+
+            figcap.text = image.attrib["alt"]
+            figure.append(figcap)
 
 
-
-class LightboxImagesExtension(Extension):
+class FigureExtension(Extension):
     """
     LightboxImagesExtension
     Extension class for markdown
     """
     def __init__(self, **kwargs):
-        self.config = {'group' : [True,"group all images into same lightbox"] }
-        super(LightboxImagesExtension, self).__init__(**kwargs)
+        self.config = {
+            'figure_classes': [None, "Class attributes assigned to the <figure /> tag"],
+            'img_classes': [None, "Class attributes assigned to the <img /> tag"],
+            'figcaption_classes': [None, "Class attributes assigned to the <figcaption /> tag"],
+        }
+        super(FigureExtension, self).__init__(**kwargs)
+
     def extendMarkdown(self, md, md_globals):
-        lightbox_images = LightboxImagesTreeprocessor(md, self.getConfig('group'))
-        md.treeprocessors.add("lightbox", lightbox_images, "_end")
+        figures = FigureTreeprocessor(md,
+                                      self.getConfig('figure_classes'),
+                                      self.getConfig('img_classes'),
+                                      self.getConfig('figcaption_classes'))
+        md.treeprocessors.add("figure", figures, "_end")
         md.registerExtension(self)
-
-
-
-
