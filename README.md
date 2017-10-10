@@ -4,7 +4,7 @@ An extension to the [Python Markdown](https://pypi.python.org/pypi/Markdown) pac
 
 The exension wraps all images in the markdown document or text in `<figure>` tags, inserting a `<figcaption>` as well by re-using the `img alt` tag from markdown syntax (text in square brackets).
 
-To install, clone the git repo and use ```pip install markdown-figure```
+To install use `pip install markdown-figure` or use the repository `pip install git+https://github.com/janwh/markdown-figure.git`
 
 Then the extension can be used by doing:
 ```python
