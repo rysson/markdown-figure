@@ -9,15 +9,21 @@ from markdown.treeprocessors import Treeprocessor
 from markdown import Extension
 from markdown.util import etree
 from copy import copy
+import re
 
 
 class FigureTreeprocessor(Treeprocessor):
     """ Figure Treeprocessor """
-    def __init__(self, md, figure_classes=None, img_classes=None, figcaption_classes=None):
+
+    RE_EOL = re.compile(r'  \r?\n')
+
+    def __init__(self, md, figure_classes=None, img_classes=None, figcaption_classes=None,
+                 multiline=True):
         Treeprocessor.__init__(self, md)
         self._figure_classes = figure_classes
         self._img_classes = img_classes
         self._figcaption_classes = figcaption_classes
+        self._multiline = multiline
 
     def run(self, root):
         parent_map = {c: p for p in root.iter() for c in p}
@@ -49,7 +55,16 @@ class FigureTreeprocessor(Treeprocessor):
             image.tail = markdown.util.AtomicString("")
             figure.append(image)
 
-            figcap.text = image.attrib["alt"]
+            if self._multiline is True:
+                for n, line in enumerate(self.RE_EOL.split(caption)):
+                    if n == 0:
+                        figcap.text = line
+                    else:
+                        br = etree.Element('br')
+                        br.tail = line
+                        figcap.append(br)
+            else:
+                figcap.text = caption
             figure.append(figcap)
 
 
@@ -63,6 +78,7 @@ class FigureExtension(Extension):
             'figure_classes': [None, "Class attributes assigned to the <figure /> tag"],
             'img_classes': [None, "Class attributes assigned to the <img /> tag"],
             'figcaption_classes': [None, "Class attributes assigned to the <figcaption /> tag"],
+            'multiline': [True, "Support line breaks in <figcaption /> tag"],
         }
         super(FigureExtension, self).__init__(**kwargs)
 
@@ -70,7 +86,8 @@ class FigureExtension(Extension):
         figures = FigureTreeprocessor(md,
                                       self.getConfig('figure_classes'),
                                       self.getConfig('img_classes'),
-                                      self.getConfig('figcaption_classes'))
+                                      self.getConfig('figcaption_classes'),
+                                      self.getConfig('multiline'))
         md.treeprocessors.add("figure", figures, "_end")
         md.registerExtension(self)
 
