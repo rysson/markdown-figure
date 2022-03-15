@@ -80,7 +80,7 @@ class FigureExtension(Extension):
             'figure_classes': [None, "Class attributes assigned to the <figure /> tag"],
             'img_classes': [None, "Class attributes assigned to the <img /> tag"],
             'figcaption_classes': [None, "Class attributes assigned to the <figcaption /> tag"],
-            'multiline': [True, "Support line breaks in <figcaption /> tag"],
+            'multiline': [True, "Support line breaks in the <figcaption /> tag"],
         }
         super(FigureExtension, self).__init__(**kwargs)
 
