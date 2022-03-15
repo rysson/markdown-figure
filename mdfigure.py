@@ -30,6 +30,7 @@ class FigureTreeprocessor(Treeprocessor):
         images = root.getiterator("img")
         for count, image in enumerate(images):
             caption = image.attrib["alt"]
+            image_src_frag = image.get("src", "").partition("#")[2]
             image.set("alt", caption)
             parent = parent_map[image]
             idx = list(parent).index(image)
@@ -49,6 +50,7 @@ class FigureTreeprocessor(Treeprocessor):
                 figcap.set("class", self._figcaption_classes)
 
             figure.set("data-title", caption)
+            figure.set("data-options", image_src_frag.replace(",", " "))
             figure.tail = copy(image.tail)
             parent.insert(idx, figure)
             parent.remove(image)
