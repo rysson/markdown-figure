@@ -73,3 +73,8 @@ class FigureExtension(Extension):
                                       self.getConfig('figcaption_classes'))
         md.treeprocessors.add("figure", figures, "_end")
         md.registerExtension(self)
+
+
+def makeExtension(*args, **kwargs):
+    """ Return extension. """
+    return FigureExtension(*args, **kwargs)
